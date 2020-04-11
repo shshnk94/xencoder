@@ -29,7 +29,7 @@ def train(model, train_loader, val_loader):
 
     model = TranslationModel()
     for name, param in model.named_parameters():
-    param.requires_grad = False if 'encoder' in name else True
+        param.requires_grad = False if 'encoder' in name else True
 
     model.cuda()
 
@@ -51,37 +51,37 @@ def train(model, train_loader, val_loader):
             loss = criterion(source, target)
             total_loss += loss.item()
 
-			loss.backward()
+            loss.backward()
 		  
-		avg_train_loss = total_loss / len(train_loader)
-		training_loss_values.append(avg_train_loss)
+        avg_train_loss = total_loss / len(train_loader)
+        training_loss_values.append(avg_train_loss)
 
-		print("Average training loss: {0:.2f}".format(avg_train_loss))
-		print("Running Validation...")
+        print("Average training loss: {0:.2f}".format(avg_train_loss))
+        print("Running Validation...")
 
-		model.eval()
+        model.eval()
 
-		eval_loss = 0
-		nb_eval_steps = 0
+        eval_loss = 0
+        nb_eval_steps = 0
 
-		for batch_no, batch in enumerate(val_loader):
+        for batch_no, batch in enumerate(val_loader):
 			
-			source = batch[0].to(device)
-			target = batch[1].to(device)
-			
-			with torch.no_grad():        
-				loss = criterion(source, target)
-				eval_loss += loss
-				nb_eval_steps += 1
+            source = batch[0].to(device)
+            target = batch[1].to(device)
 
-		avg_valid_loss = eval_loss/nb_eval_steps
-		validation_loss_values.append(avg_valid_loss)
+            with torch.no_grad():        
+                loss = criterion(source, target)
+                eval_loss += loss
+                nb_eval_steps += 1
 
-		print("Average validation loss: {0:.2f}".format(avg_valid_loss))
+        avg_valid_loss = eval_loss/nb_eval_steps
+        validation_loss_values.append(avg_valid_loss)
+
+        print("Average validation loss: {0:.2f}".format(avg_valid_loss))
 		    
-		print("Time taken by epoch: {0:.2f}".format(time() - start_time))
+        print("Time taken by epoch: {0:.2f}".format(time() - start_time))
 
-	return training_loss_values, validation_loss_values
+    return training_loss_values, validation_loss_values
 
 
 # To be used once config is set
@@ -89,14 +89,15 @@ def train(model, train_loader, val_loader):
 
 def build_model():
     
-    src_tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-multilingual-cased')
-    tgt_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    tokenizer = XLMRobertaTokenizer.from_pretrained('xlm-roberta-base')
 
-    tgt_tokenizer.bos_token = '<s>'
-    tgt_tokenizer.eos_token = '</s>'
+    # This part of the code to be used later
+    """
+    # tokenizer.bos_token = '<s>'
+    # tokenizer.eos_token = '</s>'
     
-	#hidden_size and intermediate_size are both wrt all the attention heads. 
-    #Should be divisible by num_attention_heads
+    hidden_size and intermediate_size are both wrt all the attention heads. 
+    Should be divisible by num_attention_heads
     encoder_config = BertConfig(vocab_size=src_tokenizer.vocab_size,
                                 hidden_size=config.hidden_size,
                                 num_hidden_layers=config.num_hidden_layers,
@@ -133,32 +134,35 @@ def build_model():
     
     decoder = BertForMaskedLM(decoder_config)
     decoder.set_input_embeddings(decoder_embeddings)
+    """
 
-    model = TranslationModel(encoder, decoder)
+    model = TranslationModel()
 
-    return model, src_tokenizer, tgt_tokenizer
+    return model, tokenizer
 
-def run_experiment(config):
+# To be used once config is set
+# def run_experiment(config):
 
-    model, src_tokenizer, tgt_tokenizer = build_model(config)
+def run_experiment():
+
+    # Pass config to the build_model once it is set
+    model, tokenizer = build_model()
     
-    pad_sequence = PadSequence(src_tokenizer.pad_token_id, tgt_tokenizer.pad_token_id) 
-    train_loader = DataLoader(IndicDataset(src_tokenizer, tgt_tokenizer, config.data, True), 
-                              batch_size=config.batch_size, 
-                              shuffle=False, 
-                              collate_fn=pad_sequence)
-    eval_loader = DataLoader(IndicDataset(src_tokenizer, tgt_tokenizer, config.data, False), 
-                             batch_size=config.eval_size, 
-                             shuffle=False, 
-                             collate_fn=pad_sequence)
+    custom_pad_sequence = PadSequence(tokenizer.pad_token_id) 
 
-    writer = SummaryWriter(config.output + 'logs/') 
-
-    (training_loss_values, 
-     validation_loss_values, 
-     validation_accuracy_values) = train(config, model, train_loader, eval_loader, writer)
+    # Additional params to DataLoader - config.data, batch_size, etc   
+    train_loader = DataLoader(ParallelDataset(tokenizer, src_train_path, pvt_train_path, mode='train'),
+                    shuffle=True,
+                    batch_size=64,
+                    collate_fn=custom_pad_sequence)
+    val_loader = DataLoader(ParallelDataset(tokenizer, src_val_path, pvt_val_path, mode='train'),
+                    shuffle=True,
+                    batch_size=64,
+                    collate_fn=custom_pad_sequence)
     
-    return training_loss_values, validation_loss_values, validation_accuracy_values
+    (training_loss_values, validation_loss_values) = train(model, train_loader, val_loader)
+    
+    return training_loss_values, validation_loss_values
 
 """
 if __name__ == '__main__':
