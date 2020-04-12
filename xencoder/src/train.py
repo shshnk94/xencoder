@@ -28,10 +28,10 @@ def train(model, train_loader, val_loader):
     validation_loss_values = []
 
     model = TranslationModel()
+    model.cuda()
+    
     for name, param in model.named_parameters():
         param.requires_grad = False if 'encoder' in name else True
-
-    model.cuda()
 
     criterion = nn.MSELoss(reduction='sum')
 
