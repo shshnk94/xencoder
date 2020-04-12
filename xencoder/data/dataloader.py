@@ -1,5 +1,7 @@
 import torch
-from torch.utils.data import Dataset, DataLoader
+import h5py
+import numpy as np
+from torch.utils.data import Dataset
 from torch.nn.utils.rnn import pad_sequence
 
 class PadSequence:
@@ -26,29 +28,24 @@ class ParallelDataset(Dataset):
     def __init__(self, 
                  tokenizer,
                  src_path,
-                 tgt_path,
-                 mode='train'):
+                 tgt_path):
     
-        src_handle = open(src_path, 'r')
-        tgt_handle = open(tgt_path, 'r')
+        src_handle = h5py.File(src_path, 'r')
+        tgt_handle = h5py.File(tgt_path, 'r')
 
-        self.src_sentences = []
-        self.tgt_sentences = []
+        self.src_sentences = np.array(src_handle.get('dataset'))
+        self.tgt_sentences = np.array(tgt_handle.get('dataset'))
 
-        for s, t in zip(src_handle.readlines(), tgt_handle.readlines()):
-            self.src_sentences.append(s.strip())
-            self.tgt_sentences.append(t.strip())
-      
         self.tokenizer = tokenizer
 
     def __len__(self):
-        return len(self.src_sentences)
+        return self.src_sentences.shape[0]
 
     def __getitem__(self, index):
 
-        x = self.src_sentences[index]
-        y = self.tgt_sentences[index]
- 
+        x = self.src_sentences[index].decode()
+        y = self.tgt_sentences[index].decode()
+
         #tokenize into integer indices
         x = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize(x))
         y = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize(y))
