@@ -39,7 +39,7 @@ class ParallelDataset(Dataset):
         self.tokenizer = tokenizer
 
     def __len__(self):
-        return self.src_sentences.shape[0]
+        return len(self.src_sentences)
 
     def __getitem__(self, index):
 

@@ -1,5 +1,6 @@
+import torch
 import torch.nn as nn
-
+from transformers import XLMRobertaModel, XLMRobertaTokenizer
 
 class TranslationModel(nn.Module):
 
@@ -12,8 +13,8 @@ class TranslationModel(nn.Module):
     def forward(self, src_tensors, tgt_tensors):
 
         src_tensors = self.encoder(src_tensors)[0].mean(axis=1)
-        src_embeddings = self.linear(src_tensors.cuda())
+        src_embeddings = self.linear(src_tensors)
         tgt_embeddings = self.encoder(tgt_tensors)[0].mean(axis=1)
 
-    return src_embeddings.cuda(), tgt_embeddings.cuda()
+        return src_embeddings, tgt_embeddings
    
