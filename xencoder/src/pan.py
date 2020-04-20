@@ -32,30 +32,28 @@ def train(source, target):
                               shuffle=True,
                               batch_size=64,
                               collate_fn=pad_sequence)
+    
+    #Set requires_grad to False.
+    for name, params in model.named_parameters():
+        params.requires_grad = False
 
     model.eval()
-    src_embeddings = []
-    tgt_embeddings = []
 
-    for batch in train_loader:
-        source = batch[0]
-        target = batch[1]
+    src_embeddings = None
+    tgt_embeddings = None
+
+    for source, target in train_loader:
 
         model.zero_grad()        
 
-        source = model(source)
-        target = model(target)
+        source = model(source)[0].mean(axis=1)
+        target = model(target)[0].mean(axis=1)
+       
+        src_embeddings =  source.detach().numpy() if src_embeddings is None else np.concatenate((src_embeddings, source.detach().numpy()), axis=0)
+        tgt_embeddings =  target.detach().numpy() if tgt_embeddings is None else np.concatenate((tgt_embeddings, target.detach().numpy()), axis=0)
 
-        src_embeddings.append(source)
-        tgt_embeddings.append(target)
+    pivot_adapter = linalg.orthogonal_procrustes(src_embeddings, tgt_embeddings)[0]
 
-    
-    src_embeddings = torch.cat(src_embeddings, 0)
-    tgt_embeddings = torch.cat(tgt_embeddings, 0)
-
-    pivot_adapter = linalg.orthogonal_procrustes((src_embeddings.detach().numpy()), (tgt_embeddings.detach().numpy()))[0]
-
-    
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Pre-Training the Pivot Adapter Network')

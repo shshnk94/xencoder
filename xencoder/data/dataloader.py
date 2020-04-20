@@ -30,21 +30,18 @@ class ParallelDataset(Dataset):
                  src_path,
                  tgt_path):
     
-        src_handle = h5py.File(src_path, 'r')
-        tgt_handle = h5py.File(tgt_path, 'r')
-
-        self.src_sentences = np.array(src_handle.get('dataset'))
-        self.tgt_sentences = np.array(tgt_handle.get('dataset'))
+        self.src_handle = h5py.File(src_path, 'r')
+        self.tgt_handle = h5py.File(tgt_path, 'r')
 
         self.tokenizer = tokenizer
 
     def __len__(self):
-        return len(self.src_sentences)
+        return self.src_handle.get('dataset').shape[0]
 
     def __getitem__(self, index):
 
-        x = self.src_sentences[index].decode()
-        y = self.tgt_sentences[index].decode()
+        x = self.src_handle.get('dataset')[index].decode()
+        y = self.tgt_handle.get('dataset')[index].decode()
 
         #tokenize into integer indices
         x = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize(x))
