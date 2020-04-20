@@ -1,4 +1,5 @@
 import argparse
+import pickle as pkl
 
 from scipy import linalg
 import numpy as np
@@ -53,6 +54,7 @@ def train(source, target):
         tgt_embeddings =  target.detach().numpy() if tgt_embeddings is None else np.concatenate((tgt_embeddings, target.detach().numpy()), axis=0)
 
     pivot_adapter = linalg.orthogonal_procrustes(src_embeddings, tgt_embeddings)[0]
+    return pivot_adapter
 
 if __name__ == '__main__':
 
@@ -66,5 +68,5 @@ if __name__ == '__main__':
 
     pivot_adapter = train(args.source, args.target)
 
-    with open(save_path + args.source.split('.')[-2] + args.target.split('.')[-2] + '.pkl', 'wb') as handle:
+    with open(args.save_path + args.source.split('.')[-2] + args.target.split('.')[-2] + '.pkl', 'wb') as handle:
         pkl.dump(pivot_adapter, handle)
