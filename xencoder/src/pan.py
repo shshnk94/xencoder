@@ -16,20 +16,12 @@ torch.cuda.manual_seed_all(seed_val)
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu") 
 
-def build_model():
-
-    #XLM-RoBERTa from huggingface/transformer
-    tokenizer = XLMRobertaTokenizer.from_pretrained('xlm-roberta-large')
-    encoder = XLMRobertaModel.from_pretrained('xlm-roberta-large')
-
-    return tokenizer, encoder
-
 def train(source, target):
     
-    tokenizer, model = build_model()
+    model = XLMRobertaModel.from_pretrained('xlm-roberta-large')
 
-    pad_sequence = PadSequence(tokenizer.pad_token_id)
-    train_loader = DataLoader(ParallelDataset(tokenizer, source, target),
+    pad_sequence = PadSequence(1)
+    train_loader = DataLoader(ParallelDataset(source, target),
                               shuffle=True,
                               batch_size=64,
                               collate_fn=pad_sequence)
@@ -54,6 +46,7 @@ def train(source, target):
         tgt_embeddings =  target.detach().numpy() if tgt_embeddings is None else np.concatenate((tgt_embeddings, target.detach().numpy()), axis=0)
 
     pivot_adapter = linalg.orthogonal_procrustes(src_embeddings, tgt_embeddings)[0]
+
     return pivot_adapter
 
 if __name__ == '__main__':

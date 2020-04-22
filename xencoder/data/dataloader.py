@@ -40,11 +40,7 @@ class ParallelDataset(Dataset):
 
     def __getitem__(self, index):
 
-        x = self.src_handle.get('dataset')[index].decode()
-        y = self.tgt_handle.get('dataset')[index].decode()
-
-        #tokenize into integer indices
-        x = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize(x))
-        y = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize(y))
+        x = self.src_handle.get('dataset')[index]
+        y = self.tgt_handle.get('dataset')[index]
 
         return torch.LongTensor(x), torch.LongTensor(y)
