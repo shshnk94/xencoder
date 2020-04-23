@@ -26,14 +26,11 @@ class PadSequence:
 class ParallelDataset(Dataset):
   
     def __init__(self, 
-                 tokenizer,
                  src_path,
                  tgt_path):
     
         self.src_handle = h5py.File(src_path, 'r')
         self.tgt_handle = h5py.File(tgt_path, 'r')
-
-        self.tokenizer = tokenizer
 
     def __len__(self):
         return self.src_handle.get('dataset').shape[0]
