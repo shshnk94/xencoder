@@ -40,7 +40,7 @@ def get_tokenizer(tok_type):
             bpe = SubwordNMTBPE(attrs)
             dictionary = Dictionary.load('dict.en.txt')
             
-            return dictionary.encode_line(bpe.encode(sentence))
+            return dictionary.encode_line(bpe.encode(sentence), add_if_not_exist=False)
            
         return tokenizer
 
