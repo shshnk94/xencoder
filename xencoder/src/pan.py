@@ -6,6 +6,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from transformers import XLMRobertaModel, XLMRobertaTokenizer
+from fairseq.models.transformer import TransformerModel
 
 from ..data.dataloader import PadSequence, ParallelDataset
 
@@ -15,10 +16,16 @@ torch.manual_seed(seed_val)
 torch.cuda.manual_seed_all(seed_val)
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu") 
+def build_model():
+    src_encoder = XLMRobertaModel.from_pretrained('xlm-roberta-large')
+    en2fr = TransformerModel.from_pretrained('/home/mindreese/xencoder/wmt14.en-fr.joined-dict.transformer/',
+                                            checkpoint_file='model.pt', bpe='subword_nmt',                                                                           bpe_codes='/home/mindreese/xencoder/wmt14.en-fr.joined-dict.transformer/bpecodes')
+    tgt_encoder = [model for name, model in en2fr.named_modules() if name == 'models.0.encoder'][0]
 
+    return src_encoder, tgt_encoder
 def train(source, target):
     
-    model = XLMRobertaModel.from_pretrained('xlm-roberta-large')
+    src_encoder, tgt_encoder = build_model()
 
     pad_sequence = PadSequence(1)
     train_loader = DataLoader(ParallelDataset(source, target),
@@ -39,8 +46,8 @@ def train(source, target):
 
         model.zero_grad()        
 
-        source = model(source)[0].mean(axis=1)
-        target = model(target)[0].mean(axis=1)
+        source = src_encoder(source)[0].mean(axis=1)
+        target = tgt_encoder(target)[0].mean(axis=1)
        
         src_embeddings =  source.detach().numpy() if src_embeddings is None else np.concatenate((src_embeddings, source.detach().numpy()), axis=0)
         tgt_embeddings =  target.detach().numpy() if tgt_embeddings is None else np.concatenate((tgt_embeddings, target.detach().numpy()), axis=0)
